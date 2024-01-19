@@ -19,6 +19,7 @@ import 'package:remove_emoji/remove_emoji.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:speech_to_text/speech_to_text.dart';
+import 'package:voice_to_text/voice_to_text.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../main_conntroller.dart';
 import 'menu_screen.dart';
@@ -36,6 +37,7 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   final ScrollController _controller = ScrollController();
+  final VoiceToText _speech = VoiceToText();
 
   final controller = Get.find<MainController>();
   final recorder = FlutterSoundRecord();
@@ -65,6 +67,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   bool isToggle = true;
   bool isThinking = false;
   bool isScrolling = true;
+  bool isAnimated = false;
 
   void _scrollDown() {
     if (isScrolling) {
@@ -82,7 +85,17 @@ class _DashboardScreenState extends State<DashboardScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _speech.initSpeech();
 
+    _speech.addListener(() {
+      print(_speech.textResult);
+      print(_speech.speechResult);
+      secondListner(_speech.speechResult);
+
+      // setState(() {
+      //   _speechtext = _speech.speechResult;
+      // });
+    });
     setOrb();
     if (SharedPrefsUtils.getApiKey() == null) {
       SharedPrefsUtils.setApiKey("6978da73-d9ab-40f9-aa8a-7699ad52db73");
@@ -101,7 +114,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       }
     });
 
-    // SharedPrefsUtils.clearMessageHistory();
+    SharedPrefsUtils.clearMessageHistory();
     flutterTts.stop();
   }
 
@@ -151,29 +164,6 @@ class _DashboardScreenState extends State<DashboardScreen>
     super.didChangeDependencies();
   }
 
-  sttListener() async {
-    // controller.update();
-    bool available = await speech.initialize(
-        onStatus: (status) {
-          if (!speech.isListening) {
-            _animationController!
-                .animateTo(1, duration: const Duration(seconds: 1));
-            _animationController!.reset();
-            //
-            // controller.update();
-          }
-        },
-        onError: (errorNotification) {
-          print(errorNotification.errorMsg);
-        },
-        options: []);
-    if (available) {
-      await listen();
-    } else {
-      print("The user has denied the use of speech recognition.");
-    }
-  }
-
   initVoice() async {
     try {
       // await flutterTts.setEngine(await flutterTts.getDefaultEngine);
@@ -186,117 +176,93 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   bool isRunning = false;
 
-  listen() async {
-    await speech.listen(
-      onResult: (result) async {
-        isAsked = true;
-        userQuestion = "";
-        userQuestion = "$userQuestion ${result.recognizedWords}";
+  secondListner(String recognizedWords) async {
+    if (recognizedWords.isNotEmpty) {
+      isAnimated = false;
+      isAsked = true;
+      userQuestion = "";
+      userQuestion = "$userQuestion $recognizedWords";
 
-        _scrollDown();
+      _scrollDown();
+      setState(() {
+        isScrolling = true;
+        isThinking = true;
+      });
+      controller.update();
+      await flutterTts
+          .setVoice({"name": SharedPrefsUtils.getVoice(), "locale": "en-US"});
+
+      SharedPrefsUtils.addItem(
+          "lisa", {"role": "user", "content": recognizedWords});
+
+      if (await controller.isAppOpenTask(recognizedWords)) {
+        SharedPrefsUtils.addItem("lisa",
+            {"role": "assistant", "content": "Sure, App is Opening..."});
+        // lisaResponse = "Sure, App is Opening...";
         setState(() {
-          isScrolling = true;
-          isThinking = true;
+          isThinking = false;
         });
-        controller.update();
+      } else if (await controller.isTask(recognizedWords) != null) {
+        var res = await controller.isTask(recognizedWords);
 
-        if (result.finalResult) {
-          await flutterTts.setVoice(
-              {"name": SharedPrefsUtils.getVoice(), "locale": "en-US"});
-          String recognizedWords = result.recognizedWords;
+        SharedPrefsUtils.addItem(
+            "lisa", {"role": "assistant", "content": res!});
 
-          SharedPrefsUtils.addItem(
-              "lisa", {"role": "user", "content": recognizedWords});
+        setState(() {
+          allVoiceList.add("Thinking...");
+          lisaResponse = res;
+          allVoiceList.removeLast();
+          allVoiceList.add(lisaResponse);
+          lisaResponse = "";
+          isThinking = false;
+        });
 
-          if (await controller.isAppOpenTask(recognizedWords)) {
-            SharedPrefsUtils.addItem("lisa",
-                {"role": "assistant", "content": "Sure, App is Opening..."});
-            // lisaResponse = "Sure, App is Opening...";
-            setState(() {
-              isThinking = false;
-            });
-          } else if (await controller.isTask(recognizedWords) != null) {
-            var res = await controller.isTask(recognizedWords);
-
-            SharedPrefsUtils.addItem(
-                "lisa", {"role": "assistant", "content": res!});
-
-            setState(() {
-              allVoiceList.add("Thinking...");
-              lisaResponse = res;
-              allVoiceList.removeLast();
-              allVoiceList.add(lisaResponse);
-              lisaResponse = "";
-              isThinking = false;
-            });
-
-            Future.delayed(const Duration(milliseconds: 500), () {
-              flutterTts.speak(allVoiceList.last);
-            });
-            setState(() {});
-          } else if (controller.isEvent(recognizedWords) != null) {
-            String res = controller.isEvent(recognizedWords)!;
-            if (res == "clear_chat") {
-              allVoiceList.clear();
-              await controller.clearChat();
-              allVoiceList.add("All Previous Conversation is cleared");
-              Future.delayed(const Duration(milliseconds: 1000), () async {
-                await flutterTts.speak("All Previous Conversation is cleared");
-              });
-              setState(() {
-                isThinking = false;
-              });
-            }
-          } else {
-            setState(() {
-              allVoiceList.add("Thinking...");
-            });
-
-            await getStreamResponse(recognizedWords);
-
-            // lisaResponse = await controller.getResponse("lisa");
-          }
-          if (controller.isEvent(recognizedWords) != "clear_chat") {
-            SharedPrefsUtils.addItem(
-                "lisa", {"role": "assistant", "content": lisaResponse});
-          }
-          controller.update();
-
-          await flutterTts.speak((lisaResponse ?? "Please Wait...").removEmoji);
-          setState(() {
-            isMic = (allVoiceList.length - 1);
+        Future.delayed(const Duration(milliseconds: 500), () {
+          flutterTts.speak(allVoiceList.last);
+        });
+        setState(() {});
+      } else if (controller.isEvent(recognizedWords) != null) {
+        String res = controller.isEvent(recognizedWords)!;
+        if (res == "clear_chat") {
+          allVoiceList.clear();
+          await controller.clearChat();
+          allVoiceList.add("All Previous Conversation is cleared");
+          Future.delayed(const Duration(milliseconds: 1000), () async {
+            await flutterTts.speak("All Previous Conversation is cleared");
           });
-          if (isToggle) {
-            _scrollDown();
-          }
+          setState(() {
+            isThinking = false;
+          });
         }
-      },
-      listenFor: const Duration(seconds: 50),
-      pauseFor: const Duration(seconds: 60),
-      partialResults: false,
-      onSoundLevelChange: (level) {
-        if (!isRunning) {
-          isRunning = true;
-          Timer scheduleTimeout([int milliseconds = 500]) => Timer(
-                Duration(milliseconds: milliseconds),
-                () {
-                  double aa = (level / 10);
+      } else {
+        setState(() {
+          allVoiceList.add("Thinking...");
+        });
 
-                  _animationController!.animateTo(1);
-                  isRunning = false;
-                },
-              );
-          // scheduleTimeout(10);
-        }
-      },
-      cancelOnError: true,
-      listenMode: ListenMode.search,
-    );
+        await getStreamResponse(recognizedWords);
+
+        // lisaResponse = await controller.getResponse("lisa");
+      }
+      if (controller.isEvent(recognizedWords) != "clear_chat") {
+        SharedPrefsUtils.addItem(
+            "lisa", {"role": "assistant", "content": lisaResponse});
+      }
+      controller.update();
+
+      await flutterTts.speak((lisaResponse ?? "Please Wait...").removEmoji);
+      setState(() {
+        isMic = (allVoiceList.length - 1);
+      });
+      if (isToggle) {
+        _scrollDown();
+      }
+    }
   }
 
   @override
   void dispose() {
     _animationController?.dispose();
+
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -350,6 +316,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                           Icon(Icons.close, color: ColorResources.whiteColor)),
                 ])
           : AppBar(
+              automaticallyImplyLeading: false,
               backgroundColor: Colors.transparent,
               title: Bouncy(
                 lift: 8,
@@ -424,22 +391,42 @@ class _DashboardScreenState extends State<DashboardScreen>
               return InkWell(
                 overlayColor: MaterialStateProperty.all(Colors.transparent),
                 splashColor: Colors.transparent,
-                onTap: () async {
-                  if (lisaResponse.isEmpty) {
-                    await flutterTts.stop();
+                onTap: isAnimated
+                    ? () {
+                        stopSSE();
+                        setState(() {
+                          isAnimated = false;
+                          flutterTts.stop();
+                        });
+                      }
+                    : () {
+                        stopSSE();
+                        flutterTts.stop();
 
-                    Future.delayed(const Duration(milliseconds: 300), () async {
-                      await sttListener();
-                    });
-                  }
-                },
+                        setState(() {
+                          isAnimated = true;
+                        });
+                        _speech.startListening();
+                      },
+                // ()
+                // async {
+                // if (lisaResponse.isEmpty) {
+                //   await flutterTts.stop();
+
+                //   Future.delayed(const Duration(milliseconds: 300), () async {
+                //  await sttListener();
+                //   });
+                // }
+                // },
                 child: SizedBox(
-                  height: 80.0,
-                  width: 80.0,
+                  height: 100.0,
+                  width: 100.0,
                   child: AnimatedBuilder(
                     animation: _animationController!,
                     builder: (context, child) {
-                      var value = 1 + (_animationController!.value * 0.3);
+                      var value = isAnimated
+                          ? 1.3
+                          : 1 + (_animationController!.value * 0.3);
 
                       return Transform.scale(
                         scale: value,
@@ -778,7 +765,10 @@ class _DashboardScreenState extends State<DashboardScreen>
               });
 
               _scrollDown();
-              sseController.add(content);
+              if (sseController.hasListener) {
+                sseController.add(content);
+              }
+
               // Process the queue with a delay
             }
           }
@@ -809,6 +799,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             lisaResponse = "";
             isThinking = false;
           });
+          sseController.close();
         },
         onError: (error) {
           print('Error in SSE connection: $error');
@@ -820,8 +811,15 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   void stopSSE() {
-    subscription!.cancel(); // Cancel the subscription
-    sseController.close(); // Close the controller
+    StreamSubscription<String>? subscription;
+    StreamController<String> sseController = StreamController<String>();
+
+    if (subscription != null) {
+      subscription.cancel(); // Cancel the subscription
+      sseController.close();
+    }
+
+    // Close the controller
 
     if (lisaResponse.isNotEmpty) {
       allVoiceList.isNotEmpty ? allVoiceList.removeLast() : null;
@@ -840,6 +838,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     } else {
       flutterTts.stop();
     }
+    flutterTts.stop();
   }
 
   StreamSubscription<String>? subscription;

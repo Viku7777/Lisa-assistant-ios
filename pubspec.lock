@@ -861,6 +861,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.4"
+  voice_to_text:
+    dependency: "direct main"
+    description:
+      name: voice_to_text
+      sha256: f288943444e29106c7ffae3ccf0a2430d3202bc11e808b4e390e424645761281
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.3"
   web:
     dependency: transitive
     description:

@@ -35,6 +35,7 @@ class MenuScreen extends StatelessWidget {
             appBar: AppBar(
               toolbarHeight: 70,
               leading: IconButton(
+                  color: Colors.white,
                   onPressed: () {
                     Get.back();
                   },
@@ -43,6 +44,7 @@ class MenuScreen extends StatelessWidget {
               elevation: 0,
               actions: [
                 IconButton(
+                    color: Colors.white,
                     onPressed: () async {
                       Get.back();
                     },

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:lisa_ai/main/dummy_scren.dart';
 import 'package:lisa_ai/main/main_binding.dart';
 import 'package:lisa_ai/main/screens/Chat/chat_dashboard.dart';
 import 'package:lisa_ai/main/screens/Chat/chat_history.dart';
@@ -11,7 +12,6 @@ import 'package:lisa_ai/main/screens/Chat/chat_screen.dart';
 import 'package:lisa_ai/main/screens/Chat/create_chat.dart';
 import 'package:lisa_ai/main/screens/Motion/motion_view.dart';
 import 'package:lisa_ai/main/screens/dashboard_screen.dart';
-import 'package:lisa_ai/main/screens/note_screen.dart';
 import 'package:lisa_ai/main/screens/setting_screen.dart';
 import 'package:lisa_ai/main/screens/vision_screen.dart';
 import 'package:lisa_ai/main/screens/voice/voice_view.dart';
@@ -77,6 +77,9 @@ class MyApp extends StatelessWidget {
       builder: (themeCtrl) {
         final customThemeData = ThemeData(
           fontFamily: 'SpaceMono',
+          iconButtonTheme: IconButtonThemeData(
+              style: ButtonStyle(
+                  iconColor: MaterialStateProperty.all(Colors.white))),
           primaryColor: themeCtrl.getThemeColor(),
           colorScheme: ColorScheme.fromSwatch(
             primarySwatch: createMaterialColor(themeCtrl.getThemeColor()),
@@ -91,6 +94,7 @@ class MyApp extends StatelessWidget {
           onInit: () {
             Get.put(MainBinding());
           },
+          home: TestSpeechView(),
           initialBinding: MainBinding(),
           initialRoute: DashboardScreen.routeName,
           getPages: [

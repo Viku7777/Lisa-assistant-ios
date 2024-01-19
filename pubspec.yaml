@@ -61,6 +61,7 @@ dependencies:
   readmore: ^2.2.0
   firebase_core: ^2.22.0
   firebase_crashlytics: ^3.4.4
+  voice_to_text: ^1.0.3
 
 dev_dependencies:
   flutter_test:
