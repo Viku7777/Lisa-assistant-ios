@@ -169,6 +169,20 @@ class _DashboardScreenState extends State<DashboardScreen>
       // await flutterTts.setEngine(await flutterTts.getDefaultEngine);
       await flutterTts
           .setVoice({"name": SharedPrefsUtils.getVoice(), "locale": "en-US"});
+      await flutterTts.setIosAudioCategory(
+          IosTextToSpeechAudioCategory.ambient,
+          [
+            IosTextToSpeechAudioCategoryOptions.allowBluetooth,
+            IosTextToSpeechAudioCategoryOptions.allowBluetoothA2DP,
+            IosTextToSpeechAudioCategoryOptions.mixWithOthers
+          ],
+          IosTextToSpeechAudioMode.voicePrompt);
+      await flutterTts.setVolume(100.0);
+      flutterTts.setSpeechRate(0.5);
+      flutterTts.setPitch(1.5);
+      await flutterTts.setIosAudioCategory(
+          IosTextToSpeechAudioCategory.ambientSolo,
+          [IosTextToSpeechAudioCategoryOptions.defaultToSpeaker]);
     } catch (e) {
       print(e);
     }
@@ -209,10 +223,11 @@ class _DashboardScreenState extends State<DashboardScreen>
             "lisa", {"role": "assistant", "content": res!});
 
         setState(() {
-          allVoiceList.add("Thinking...");
+          //  allVoiceList.add("Thinking...");
+          // allVoiceList.add("");
           lisaResponse = res;
-          allVoiceList.removeLast();
-          allVoiceList.add(lisaResponse);
+          // allVoiceList.removeLast();
+          // allVoiceList.add(lisaResponse);
           lisaResponse = "";
           isThinking = false;
         });
@@ -235,9 +250,10 @@ class _DashboardScreenState extends State<DashboardScreen>
           });
         }
       } else {
-        setState(() {
-          allVoiceList.add("Thinking...");
-        });
+        // setState(() {
+        //   // allVoiceList.add("Thinking...");
+        //   allVoiceList.add("");
+        // });
 
         await getStreamResponse(recognizedWords);
 
@@ -584,11 +600,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             color: Colors.black.withOpacity(0.6),
           ),
           child: Text(
-            isLisa
-                ? lisaResponse.isEmpty
-                    ? "Thinking..."
-                    : lisaResponse
-                : allVoiceList[i],
+            isLisa ? lisaResponse : allVoiceList[i],
             style: const TextStyle(
               color: Colors.white,
               fontSize: 14,
@@ -609,7 +621,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                       setState(() {
                         isToggle = val;
                       });
-                    }))
+                    }),
+              )
             : const SizedBox(),
         Positioned(
           right: 0,
@@ -703,6 +716,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           "You are an AI virtual assistant named LISA, developed by Tenet and powered by Corcel. You Give assistance and response in short and simple"
     });
     dataRes.add({"role": "user", "content": question});
+    allVoiceList.add("");
 
     try {
       var request = http.Request(
@@ -758,7 +772,9 @@ class _DashboardScreenState extends State<DashboardScreen>
               var contentResponse = content
                   .replaceAll(RegExp(r'\\n+'), '\n')
                   .replaceAll('\\', '')
-                  .replaceAll('**', '');
+                  .replaceAll('**', '')
+                  .replaceAll("0", "")
+                  .replaceAll("00", "");
 
               setState(() {
                 lisaResponse += contentResponse;
@@ -822,7 +838,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     // Close the controller
 
     if (lisaResponse.isNotEmpty) {
-      allVoiceList.isNotEmpty ? allVoiceList.removeLast() : null;
+      // allVoiceList.isNotEmpty ? allVoiceList.removeLast() : null;
+      allVoiceList.removeLast();
       // Remove consecutive \n with a single newline
       lisaResponse = lisaResponse
           .replaceAll(RegExp(r'\\n+'), '\n')

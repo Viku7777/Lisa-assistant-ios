@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:get/get.dart';
 import 'package:lisa_ai/Utils/helpers.dart';
 import 'package:lisa_ai/Utils/sharedpref_utils.dart';
@@ -14,6 +15,8 @@ class CreateVoiceView extends StatefulWidget {
 
 class _CreateVoiceViewState extends State<CreateVoiceView> {
   // FlutterTts flutterTts = FlutterTts();
+  FlutterTts flutterTts = FlutterTts();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -53,7 +56,7 @@ class _CreateVoiceViewState extends State<CreateVoiceView> {
             onTap: () async {
               Helper.showMyToast("Voice Updated");
               // await SharedPrefsUtils.setVoice("en-us-x-iol-local");
-              await SharedPrefsUtils.setVoice("en-us-x-iol-local");
+              await SharedPrefsUtils.setVoice("Fred");
 
               Get.back();
             },
@@ -71,9 +74,13 @@ class _CreateVoiceViewState extends State<CreateVoiceView> {
             ),
             onTap: () async {
               Helper.showMyToast("Voice Updated");
-              await SharedPrefsUtils.setVoice("en-us-x-tpd-network");
+              await SharedPrefsUtils.setVoice("Aaron");
 
               Get.back();
+              // var getVoice = await flutterTts.getVoices;
+              // var english = getVoice.where((e) => e["locale"] == "en-US");
+              // var coie = english.where((e) => e["gender"] == "male");
+              // print(coie.map((e) => e));
             },
           ),
           ListTile(
@@ -84,16 +91,16 @@ class _CreateVoiceViewState extends State<CreateVoiceView> {
             ),
             onTap: () async {
               Helper.showMyToast("Voice Updated");
-              await SharedPrefsUtils.setVoice("en-us-x-iob-local");
-              // isVoice = true;
+              await SharedPrefsUtils.setVoice("Nicky");
+
               Get.back();
             },
           ),
           ListTile(
             onTap: () async {
               Helper.showMyToast("Voice Updated");
-              await SharedPrefsUtils.setVoice("en-us-x-tpf-local");
-              // isVoice = true;
+              await SharedPrefsUtils.setVoice("Samantha");
+
               Get.back();
             },
             title: const Text(
@@ -107,3 +114,9 @@ class _CreateVoiceViewState extends State<CreateVoiceView> {
     );
   }
 }
+
+
+  // var getVoice = await flutterTts.getVoices;
+  //             var english = getVoice.where((e) => e["locale"] == "en-US");
+  //             var coie = english.where((e) => e["gender"] == "female");
+  //             print(coie.map((e) => e));
